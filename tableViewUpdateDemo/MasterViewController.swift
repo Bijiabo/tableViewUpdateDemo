@@ -10,21 +10,32 @@ import UIKit
 
 class MasterViewController: UITableViewController {
 
+    let originalList: [String] = ["a", "b", "c", "d", "e", "f", "g"]
+    let oldList: [String] = ["b", "c", "e", "g"]
+    let newList: [String] = ["a", "b", "d", "f", "g"]
+    
     var detailViewController: DetailViewController? = nil
-    var objects = [Any]()
+    var objects = [String]()
 
+    var isOldList: Bool = true
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         navigationItem.leftBarButtonItem = editButtonItem
 
-        let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(insertNewObject(_:)))
+        // let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(insertNewObject(_:)))
+        let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(toggleList(_:)))
+        
         navigationItem.rightBarButtonItem = addButton
         if let split = splitViewController {
             let controllers = split.viewControllers
             detailViewController = (controllers[controllers.count-1] as! UINavigationController).topViewController as? DetailViewController
         }
+        
+        objects = oldList
+        tableView.reloadData()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -36,11 +47,25 @@ class MasterViewController: UITableViewController {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
-
+    /*
     func insertNewObject(_ sender: Any) {
         objects.insert(NSDate(), at: 0)
         let indexPath = IndexPath(row: 0, section: 0)
         tableView.insertRows(at: [indexPath], with: .automatic)
+    }
+    */
+    func toggleList(_ sender: Any) {
+        if isOldList {
+            updateTableView(newList: newList, originalList: originalList)
+            
+            
+        } else {
+//            objects = oldList
+//            tableView.reloadData()
+            updateTableView(newList: oldList, originalList: originalList)
+        }
+        
+        isOldList = !isOldList
     }
 
     // MARK: - Segues
@@ -70,8 +95,9 @@ class MasterViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
 
-        let object = objects[indexPath.row] as! NSDate
-        cell.textLabel!.text = object.description
+        // let object = objects[indexPath.row] as! NSDate
+        let cellData = objects[indexPath.row]
+        cell.textLabel!.text = cellData
         return cell
     }
 
@@ -87,6 +113,73 @@ class MasterViewController: UITableViewController {
         } else if editingStyle == .insert {
             // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view.
         }
+    }
+    
+    func updateTableView(newList: [String], originalList: [String]) {
+        var oldList = objects
+        
+        func indexInOriginalList(forItem item: String) -> Int? {
+            return originalList.index(of: item)
+        }
+        
+        var oldListIndexs: [Int] = [Int]()
+        for (index,item) in oldList.enumerated() {
+            if let indexInOriginalList = indexInOriginalList(forItem: item) {
+                oldListIndexs.append(indexInOriginalList)
+            }
+        }
+        
+        var newListIndexs: [Int] = [Int]()
+        for (index,item) in newList.enumerated() {
+            if let indexInOriginalList = indexInOriginalList(forItem: item) {
+                newListIndexs.append(indexInOriginalList)
+            }
+        }
+        
+        // here to update table view data source
+        // objects = newList
+        
+        var needRemoveIndexs: [Int] = [Int]() //
+        var oldListIndexsAfterRemove: [Int] = [Int]()
+        for (index,item) in oldListIndexs.enumerated() {
+            if !newListIndexs.contains(item) {
+                needRemoveIndexs.append(index)
+            } else {
+                oldListIndexsAfterRemove.append(item)
+            }
+        }
+        
+        // here to remove rows
+        tableView.beginUpdates()
+        var indexPathArrayToRemove = [IndexPath]()
+        for (_, item) in needRemoveIndexs.reversed().enumerated() {
+            indexPathArrayToRemove.append(IndexPath(row: item, section: 0))
+            objects.remove(at: item)
+        }
+        tableView.deleteRows(at: indexPathArrayToRemove, with: UITableViewRowAnimation.automatic)
+        tableView.endUpdates()
+        
+        // 计算需要插入的行
+        var needAppendIndexs: [Int] = [Int]()
+        for (index,item) in newListIndexs.enumerated() {
+            if !oldListIndexsAfterRemove.contains(item) {
+                needAppendIndexs.append(item)
+            }
+        }
+        
+        // here to insert rows
+        
+        tableView.beginUpdates()
+        var indexPathArrayToInsert = [IndexPath]()
+        var insertValues = [String]()
+        for (index, item) in needAppendIndexs.enumerated() {
+            indexPathArrayToInsert.append(IndexPath(row: newListIndexs.index(of: item)!, section: 0))
+            objects.insert(originalList[item], at: newListIndexs.index(of: item)!)
+            // debug
+            insertValues.append(originalList[item])
+        }
+        tableView.insertRows(at: indexPathArrayToInsert, with: UITableViewRowAnimation.automatic)
+        tableView.endUpdates()
     }
 
 
