@@ -56,13 +56,9 @@ class MasterViewController: UITableViewController {
     */
     func toggleList(_ sender: Any) {
         if isOldList {
-            updateTableView(newList: newList, originalList: originalList)
-            
-            
+            updateTableView(newList: newList, originalList: originalList, list: &objects)
         } else {
-//            objects = oldList
-//            tableView.reloadData()
-            updateTableView(newList: oldList, originalList: originalList)
+            updateTableView(newList: oldList, originalList: originalList, list: &objects)
         }
         
         isOldList = !isOldList
@@ -115,7 +111,7 @@ class MasterViewController: UITableViewController {
         }
     }
     
-    func updateTableView(newList: [String], originalList: [String]) {
+    func updateTableView(newList: [String], originalList: [String], list: inout [String]) {
         var oldList = objects
         
         func indexInOriginalList(forItem item: String) -> Int? {
@@ -154,7 +150,7 @@ class MasterViewController: UITableViewController {
         var indexPathArrayToRemove = [IndexPath]()
         for (_, item) in needRemoveIndexs.reversed().enumerated() {
             indexPathArrayToRemove.append(IndexPath(row: item, section: 0))
-            objects.remove(at: item)
+            list.remove(at: item)
         }
         tableView.deleteRows(at: indexPathArrayToRemove, with: UITableViewRowAnimation.automatic)
         tableView.endUpdates()
@@ -174,7 +170,7 @@ class MasterViewController: UITableViewController {
         var insertValues = [String]()
         for (index, item) in needAppendIndexs.enumerated() {
             indexPathArrayToInsert.append(IndexPath(row: newListIndexs.index(of: item)!, section: 0))
-            objects.insert(originalList[item], at: newListIndexs.index(of: item)!)
+            list.insert(originalList[item], at: newListIndexs.index(of: item)!)
             // debug
             insertValues.append(originalList[item])
         }
